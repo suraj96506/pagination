@@ -1,22 +1,19 @@
 import 'dart:convert';
-
+import 'package:provider/provider.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
 import 'package:khushi/Api.dart';
 import 'package:provider/provider.dart';
 
 void main() {
-  runApp(MultiProvider(
-    providers: [
-      ChangeNotifierProvider(
-          lazy: true,
-          create: ((
-            context,
-          ) =>
-              Api()))
-    ],
-    child: MyApp(),
-  ));
+  runApp(
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (context) => Api()),
+      ],
+      child: MyApp(),
+    ),
+  );
 }
 
 class MyApp extends StatelessWidget {
@@ -161,34 +158,59 @@ class _MyHomePageState extends State<MyHomePage> {
     });
   }
 
+  List _temp = [];
+  List permanent = [];
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder(
-        future: Api().getCategory(Provider.of<Api>(context).page),
-        builder: (BuildContext ctx, AsyncSnapshot<List> snapshot) {
-          if (snapshot.connectionState != ConnectionState.done) {
-            return Center(child: CircularProgressIndicator());
-          }
+    return Scaffold(
+      backgroundColor: Colors.black,
+      body: FutureBuilder(
+          future: Api().getCategory(Provider.of<Api>(context).page),
+          builder: (BuildContext ctx, AsyncSnapshot<List> snapshot) {
+            if (snapshot.connectionState != ConnectionState.done) {
+              return Center(child: CircularProgressIndicator());
+            }
 
-          if (snapshot.hasError) {
-            return Center(child: Text("Error"));
-          }
-          if (!snapshot.hasData) {
-            return Center(child: Text("Error"));
-          }
+            if (snapshot.hasError) {
+              return Center(child: Text("Error"));
+            }
+            if (!snapshot.hasData) {
+              return Center(child: Text("Error"));
+            }
+            _temp.addAll(snapshot.data!);
+            permanent = _temp.toSet().toList();
+            print(permanent.length);
+            print(_temp.length);
+            return SingleChildScrollView(
+              child: Column(
+                children: [
+                  Container(
+                    color: Colors.green,
+                    height: 400,
+                    child: RefreshIndicator(
+                      onRefresh: () async {
+                        //temp.clear();
+                      },
+                      child: ListView.builder(
+                          shrinkWrap: true,
+                          controller: _scrollController,
+                          itemCount: _temp.length,
+                          itemBuilder: (context, index) {
+                            //final item = temp[index];
 
-          return ListView.builder(
-              controller: _scrollController,
-              itemCount: snapshot.data!.length,
-              itemBuilder: (context, index) {
-                final item = snapshot.data![index];
-                return Card(
-                  child: ListTile(
-                    title: Text(snapshot.data![index]["id"]),
-                    //subtitle: Text(dataToShow[index].ourPrice.toString()),
+                            return Card(
+                              child: ListTile(
+                                title: Text(_temp[index]["id"].toString()),
+                                //subtitle: Text(dataToShow[index].ourPrice.toString()),
+                              ),
+                            );
+                          }),
+                    ),
                   ),
-                );
-              });
-        });
+                ],
+              ),
+            );
+          }),
+    );
   }
 }
